@@ -86,10 +86,37 @@ const Contact = () => {
 
     setLoading(true)
 
+    const serviceId = import.meta.env.VITE_EMAILJS_SERVICE_ID;
+    const templateId = import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
+    const publicKey = import.meta.env.VITE_EMAIL_JS_ACCESS_TOKEN;
+
+    // Fallback to mailto if credentials are missing or placeholders
+    if (!serviceId || !templateId || !publicKey || serviceId === 'service_placeholder') {
+      const mailtoUrl = `mailto:rudra.patel70@yahoo.com?subject=Portfolio Message from ${encodeURIComponent(form.name)}&body=Message from ${encodeURIComponent(form.name)} (${encodeURIComponent(form.email)}):%0D%0A%0D%0A${encodeURIComponent(form.message)}`;
+      window.location.href = mailtoUrl;
+
+      setLoading(false)
+      setSuccess(true)
+      setForm({ name: "", email: "", message: "" })
+      toast.success("Opening your email client... ✉️", {
+        duration: 3000,
+        position: "bottom-right",
+      })
+      setShowConfetti(true)
+      setCaptchaToken(null)
+      if (captchaRef.current) captchaRef.current.reset()
+
+      setTimeout(() => {
+        setSuccess(false)
+        setShowConfetti(false)
+      }, 5000)
+      return
+    }
+
     emailjs
       .send(
-        import.meta.env.VITE_EMAILJS_SERVICE_ID,
-        import.meta.env.VITE_EMAILJS_TEMPLATE_ID,
+        serviceId,
+        templateId,
         {
           from_name: form.name,
           to_name: "Rudra Patel",
@@ -97,7 +124,7 @@ const Contact = () => {
           to_email: "rudra.patel70@yahoo.com",
           message: form.message,
         },
-        import.meta.env.VITE_EMAIL_JS_ACCESS_TOKEN,
+        publicKey,
       )
       .then(
         () => {
