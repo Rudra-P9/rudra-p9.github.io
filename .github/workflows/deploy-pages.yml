@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-and-deploy:
+  build-and-upload:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repo
@@ -32,13 +32,9 @@ jobs:
           path: ./dist
 
   deploy:
-    needs: build-and-deploy
+    needs: build-and-upload
     runs-on: ubuntu-latest
     steps:
       - name: Deploy to GitHub Pages
         uses: actions/deploy-pages@v1
-        with:
-          # the action uses the artifact uploaded above
-          # no extra inputs required
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        # No `with:` block needed here. The action consumes the artifact uploaded above.
