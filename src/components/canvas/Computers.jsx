@@ -5,18 +5,23 @@ import { OrbitControls, Preload, useGLTF } from "@react-three/drei";
 import CanvasLoader from "../Loader";
 
 const Computers = ({ isMobile }) => {
-  const computer = useGLTF("./desktop_pc/scene.gltf");
+  // load from public folder (absolute path) to avoid bundler-case/path surprises
+  const earth = useGLTF("/earth/scene.gltf");
   const meshRef = useRef();
 
+  // gentle rotation for mobile (only when mobile)
   useFrame((state, delta) => {
     if (meshRef.current && isMobile) {
-      meshRef.current.rotation.y += delta * 0.5; // Adjust rotation speed as needed
+      meshRef.current.rotation.y += delta * 0.5;
+    } else if (meshRef.current && !isMobile) {
+      // subtle rotation on desktop as well (optional)
+      meshRef.current.rotation.y += delta * 0.15;
     }
   });
 
   return (
-    <mesh ref={meshRef}>
-      <hemisphereLight intensity={0.15} groundColor='black' />
+    <mesh>
+      <hemisphereLight intensity={0.15} groundColor="black" />
       <spotLight
         position={[-20, 50, 10]}
         angle={0.12}
@@ -26,48 +31,40 @@ const Computers = ({ isMobile }) => {
         shadow-mapSize={1024}
       />
       <pointLight intensity={1} />
-      <primitive
-        object={computer.scene}
-        scale={isMobile ? 0.75 : 0.75}
-        position={isMobile ? [0, -3, 0] : [0, -3.25, -1.5]}
-        rotation={isMobile ? [0, 0, 0] : [-0.01, -0.2, -0.1]}
-      />
+
+      {/* group lets us fine tune scale/position/rotation without touching the model file */}
+      <group
+        ref={meshRef}
+        scale={isMobile ? 0.6 : 0.9}               // tuned so Earth isn't cropped
+        position={isMobile ? [0, -1.2, 0] : [0, -1.6, 0]}
+        rotation={isMobile ? [0, 0, 0] : [0, 0.2, 0]}
+      >
+        <primitive object={earth.scene} />
+      </group>
     </mesh>
   );
 };
 
-const ComputersCanvas = () => {
+export const ComputersCanvas = () => {
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
-    // Add a listener for changes to the screen size
     const mediaQuery = window.matchMedia("(max-width: 500px)");
-
-    // Set the initial value of the `isMobile` state variable
     setIsMobile(mediaQuery.matches);
-
-    // Define a callback function to handle changes to the media query
-    const handleMediaQueryChange = (event) => {
-      setIsMobile(event.matches);
-    };
-
-    // Add the callback function as a listener for changes to the media query
+    const handleMediaQueryChange = (event) => setIsMobile(event.matches);
     mediaQuery.addEventListener("change", handleMediaQueryChange);
-
-    // Remove the listener when the component is unmounted
-    return () => {
-      mediaQuery.removeEventListener("change", handleMediaQueryChange);
-    };
+    return () => mediaQuery.removeEventListener("change", handleMediaQueryChange);
   }, []);
 
   return (
     <Canvas
-      frameloop='always'
+      frameloop="always"
       shadows
       dpr={[1, 2]}
-      camera={isMobile ? 
-        { position: [0, 0, 20], fov: 50 } : 
-        { position: [20, 3, 5], fov: 25 }
+      camera={
+        isMobile
+          ? { position: [0, 0, 20], fov: 50 }
+          : { position: [20, 3, 5], fov: 25 }
       }
       gl={{ preserveDrawingBuffer: true }}
     >
@@ -78,6 +75,7 @@ const ComputersCanvas = () => {
             maxPolarAngle={Math.PI / 2}
             minPolarAngle={Math.PI / 2}
             autoRotate={true}
+            autoRotateSpeed={0.4}
           />
         )}
         <Computers isMobile={isMobile} />
